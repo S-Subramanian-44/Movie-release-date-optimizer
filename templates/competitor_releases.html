@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upcoming Releases</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            background: #fff;
+            color: black;
+        }
+        .table thead {
+            background: #2a5298;
+            color: white;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .navbar a {
+            color: white;
+            font-size: 18px;
+            margin-right: 20px;
+        }
+        .countdown {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ff5733;
+        }
+        .search-box {
+            max-width: 300px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <div class="container">
+        <nav class="navbar">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="#">🎬 Competitor Releases</a>
+            <a href="{{ url_for('logout') }}" class="ml-auto">🚪 Logout</a>
+        </nav>
+    </div>
+
+    <!-- Page Title -->
+    <div class="container text-center mt-4">
+        <h2>📅 Competitor Movie Releases</h2>
+    </div>
+
+    <!-- Search & Filter -->
+    <div class="container text-center mt-4">
+        <input type="text" id="search" class="form-control search-box" placeholder="🔍 Search by title..." onkeyup="filterTable()">
+    </div>
+
+    <!-- Upcoming Releases Table -->
+    <div class="container mt-4">
+        <div class="card p-4">
+            <h4><i class="fas fa-calendar-alt"></i> Competitor Releases</h4>
+        <table class="table table-hover mt-3" id="moviesTable">
+            <thead>
+                <tr>
+                    <th onclick="sortTable(0)">🎬 Movie Name <i class="fas fa-sort"></i></th>
+                    <th onclick="sortTable(1)">📜 Genre <i class="fas fa-sort"></i></th>
+                    <th onclick="sortTable(2)">📅 Release Date <i class="fas fa-sort"></i></th>
+                    <th onclick="sortTable(3)">🏢 Studio <i class="fas fa-sort"></i></th>
+                    <th>⏳ Countdown</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for movie in upcoming_movies %}
+                <tr>
+                    <td>{{ movie.title }}</td>
+                    <td>{{ movie.genre }}</td>
+                    <td class="release-date">{{ movie.release_date }}</td>
+                    <td>{{ movie.studio_name }}</td>  <!-- Changed from movie.source to movie.studio -->
+                    <td class="countdown"></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        function filterTable() {
+            let input = document.getElementById("search").value.toLowerCase();
+            let rows = document.querySelectorAll("#moviesTable tbody tr");
+            rows.forEach(row => {
+                let title = row.cells[0].textContent.toLowerCase();
+                row.style.display = title.includes(input) ? "" : "none";
+            });
+        }
+
+        function sortTable(column) {
+            let table = document.getElementById("moviesTable");
+            let rows = Array.from(table.rows).slice(1);
+            let sortedRows = rows.sort((a, b) => {
+                let textA = a.cells[column].textContent.trim().toLowerCase();
+                let textB = b.cells[column].textContent.trim().toLowerCase();
+                return textA.localeCompare(textB);
+            });
+            table.tBodies[0].append(...sortedRows);
+        }
+
+        function updateCountdowns() {
+            let rows = document.querySelectorAll("#moviesTable tbody tr");
+            let now = new Date();
+            rows.forEach(row => {
+                let dateText = row.querySelector(".release-date").textContent;
+                let releaseDate = new Date(dateText);
+                let timeDiff = releaseDate - now;
+                let days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                row.querySelector(".countdown").textContent = days > 0 ? `${days} days left` : "Released 🎉";
+            });
+        }
+
+        updateCountdowns();
+        setInterval(updateCountdowns, 60000); // Update every minute
+    </script>
+
+    <!-- Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

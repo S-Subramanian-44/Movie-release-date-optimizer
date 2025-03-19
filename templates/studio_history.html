@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ studio_name }} - Movie History</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+        }
+        .container {
+            margin-top: 50px;
+        }
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            background: #fff;
+            color: black;
+        }
+        .table thead {
+            background: #2a5298;
+            color: white;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        .navbar a {
+            color: white;
+            font-size: 18px;
+            margin-right: 20px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <div class="container">
+        <nav class="navbar">
+            <a href="{{ url_for('dashboard') }}">🏠 Dashboard</a>
+            <a href="{{ url_for('upcoming_releases') }}">📅 Competitor Releases</a>
+            <a href="{{ url_for('logout') }}" class="ml-auto">🚪 Logout</a>
+        </nav>
+    </div>
+
+    <!-- Page Title -->
+    <div class="container text-center mt-4">
+        <h2>🎥 {{ studio_name }} - Movie History</h2>
+        <h5>🏆 Win Rate: <span style="color:#ffdd57;">{{ win_rate }}%</span></h5>
+    </div>
+
+    <!-- Studio Movies Table -->
+    <div class="container mt-4">
+        <div class="card p-4">
+            <h4><i class="fas fa-film"></i> Movie History</h4>
+            <table class="table table-hover mt-3">
+                <thead>
+                    <tr>
+                        <th>🎬 Movie Name</th>
+                        <th>📜 Genre</th>
+                        <th>📅 Release Date</th>
+                        <th>💰 Profit</th>
+                        <th>🏆 Won</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for movie in studio_movies %}
+                    <tr>
+                        <td>{{ movie.title }}</td>
+                        <td>{{ movie.genre }}</td>
+                        <td>{{ movie.release_date }}</td>
+                        <td>${{ movie.profit }}</td>
+                        <td>{{ "✅" if movie.won else "❌" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>

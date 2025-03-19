@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Enter Movie History</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+            font-family: 'Poppins', sans-serif;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.2);
+            max-width: 1200px;
+            color: #a9fe86;
+        }
+        .form-group {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.1);
+            transition: 0.3s;
+            position: relative;
+        }
+        .dropdown-container {
+            position: relative;
+        }
+        .dropdown-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            width: 100%;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: left;
+            color: #fff;
+            cursor: pointer;
+        }
+        .dropdown-menu {
+            display: none;
+            position: absolute;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.9);
+            color: black;
+            border-radius: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            box-shadow: 0px 5px 12px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+        .dropdown-menu label {
+            display: block;
+            padding: 5px 10px;
+            cursor: pointer;
+        }
+        .dropdown-menu label:hover {
+            background: #ddd;
+        }
+        .selected-genres {
+            color: #fff;
+            font-size: 0.9rem;
+        }
+        .btn-primary {
+            background-color: #ff6b6b;
+            border: none;
+            font-weight: bold;
+            border-radius: 50px;
+            padding: 10px;
+            transition: 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #e04e4e;
+            transform: scale(1.05);
+        }
+        .title {
+            text-align: center;
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #ffdd57;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h3 class="title">🎬 Enter Your Movie History</h3>
+        <form action="{{ url_for('add_movies') }}" method="POST">
+            <div class="row">
+                {% for i in range(movies_produced) %}
+                <div class="col-md-4 mb-4">
+                    <div class="form-group">
+                        <h5 class="text-center">🎥 Movie {{ i+1 }}</h5>
+                        <label class="form-label">Title</label>
+                        <input type="text" class="form-control" name="title_{{ i }}" required>
+
+                        <label class="form-label mt-2">Genre</label>
+                        <div class="dropdown-container">
+                            <button type="button" class="dropdown-button" id="dropdown_btn_{{ i }}" onclick="toggleDropdown({{ i }})">
+                                Select Genres
+                            </button>
+                            <div class="dropdown-menu" id="dropdown_menu_{{ i }}">
+                                {% set genres = ["Action", "Adventure", "Animation", "Biography", "Comedy", "Crime", "Documentary", "Drama", "Fantasy", "Historical", "Horror", "Musical", "Mystery", "Romance", "Sci-Fi", "Sport", "Superhero", "Thriller", "War", "Western"] %}
+                                {% for genre in genres %}
+                                <label>
+                                    <input type="checkbox" value="{{ genre }}" class="genre-checkbox" data-index="{{ i }}" onclick="updateGenres({{ i }})">
+                                    {{ genre }}
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <input type="hidden" name="genre_{{ i }}" id="genre_hidden_{{ i }}" required>
+                        <p class="selected-genres" id="selected_genres_{{ i }}"></p>
+
+                        <label class="form-label mt-2">Release Date</label>
+                        <input type="date" class="form-control" name="release_date_{{ i }}" required>
+
+                        <label class="form-label mt-2">Profit (in USD)</label>
+                        <input type="number" step="0.01" class="form-control" name="profit_{{ i }}" required>
+
+                        <label class="form-label mt-2">Awards Won (0 or 1)</label>
+                        <input type="number" class="form-control" name="won_{{ i }}" min="0" max="1" required>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <button type="submit" class="btn btn-primary w-100 mt-3">Submit</button>
+        </form>
+    </div>
+
+    <script>
+        function toggleDropdown(index) {
+            let menu = document.getElementById("dropdown_menu_" + index);
+            menu.style.display = (menu.style.display === "block") ? "none" : "block";
+        }
+
+        function updateGenres(index) {
+            let checkboxes = document.querySelectorAll(`.genre-checkbox[data-index="${index}"]:checked`);
+            let selectedGenres = Array.from(checkboxes).map(cb => cb.value);
+            
+            // Update hidden input field
+            document.getElementById("genre_hidden_" + index).value = selectedGenres.join(", ");
+            
+            // Display selected genres
+            document.getElementById("selected_genres_" + index).textContent = selectedGenres.length > 0 
+                ? "Selected: " + selectedGenres.join(", ") 
+                : "";
+        }
+
+        // Close dropdown if clicked outside
+        document.addEventListener("click", function(event) {
+            let dropdowns = document.querySelectorAll(".dropdown-container");
+            dropdowns.forEach(dropdown => {
+                if (!dropdown.contains(event.target)) {
+                    let menu = dropdown.querySelector(".dropdown-menu");
+                    if (menu) menu.style.display = "none";
+                }
+            });
+        });
+    </script>
+</body>
+</html>
