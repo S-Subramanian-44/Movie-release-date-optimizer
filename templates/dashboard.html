@@ -171,39 +171,137 @@
         </div>
     </div>
 
-    <!-- JavaScript -->
-    <script>
-        document.getElementById('releaseForm').addEventListener('submit', function(event) {
-            event.preventDefault();
-            const formData = {
-                title: document.getElementById('title').value,
-                genre: document.getElementById('genre').value,
-                budget: document.getElementById('budget').value,
-                expected_revenue: document.getElementById('expected_revenue').value,
-                alternative_dates: [
-                    document.getElementById('alt_dates1').value,
-                    document.getElementById('alt_dates2').value,
-                    document.getElementById('alt_dates3').value
-                ]
-            };
-            fetch('/apply_release', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.best_date) {
-                    document.getElementById('responseMessage').innerText = `🎉 Best Release Date: ${data.best_date}`;
-                } else {
-                    document.getElementById('responseMessage').innerText = '❌ Error submitting release date.';
-                }
-            })
-            .catch(error => {
-                document.getElementById('responseMessage').innerText = '❌ Server error.';
-            });
-        });
-    </script>
+<!-- JavaScript -->
+<script>
+document.getElementById('releaseForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const formData = {
+        title: document.getElementById('title').value.trim(),
+        genre: document.getElementById('genre').value.trim(),
+        budget: parseFloat(document.getElementById('budget').value) || 0,
+        expected_revenue: parseFloat(document.getElementById('expected_revenue').value) || 0,
+        alternative_dates: [
+            document.getElementById('alt_dates1').value,
+            document.getElementById('alt_dates2').value,
+            document.getElementById('alt_dates3').value
+        ]
+    };
+
+    if (!formData.title || !formData.genre || formData.alternative_dates.some(date => !date)) {
+        alert('❌ Please fill in all required fields.');
+        return;
+    }
+
+    fetch('/apply_release', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.best_date) {
+            showConfirmationModal(data.best_date, formData);
+        } else {
+            alert('❌ Error: ' + (data.error || 'Failed to get the best date.'));
+        }
+    })
+    .catch(error => {
+        alert('❌ Server error. Please try again.');
+    });
+});
+
+// Function to show the confirmation modal
+function showConfirmationModal(suggestedDate, formData) {
+    // Remove any existing modal to prevent duplication
+    const existingModal = document.getElementById('confirmationModal');
+    if (existingModal) existingModal.remove();
+
+    const modalHTML = `
+        <div class="modal fade" id="confirmationModal" tabindex="-1" aria-labelledby="confirmationModalLabel" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Confirm Release Date</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p>🎉 Best Suggested Release Date: <strong>${suggestedDate}</strong></p>
+                        <p>Are you satisfied with this date?</p>
+                        <button class="btn btn-success" id="confirmDateBtn">✅ Yes</button>
+                        <button class="btn btn-danger" id="changeDateBtn">❌ No</button>
+                        <div id="customDateSection" style="display:none; margin-top: 10px;">
+                            <label for="customDate">Enter Your Preferred Date:</label>
+                            <input type="date" id="customDate" class="form-control mt-2">
+                            <button class="btn btn-primary mt-2" id="saveCustomDateBtn">📅 Save New Date</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    $('#confirmationModal').modal('show');
+
+    // Event Listeners
+    document.getElementById('confirmDateBtn').addEventListener('click', function() {
+        saveReleaseDate(suggestedDate, formData);
+    });
+
+    document.getElementById('changeDateBtn').addEventListener('click', function() {
+        document.getElementById('customDateSection').style.display = 'block';
+    });
+
+    document.getElementById('saveCustomDateBtn').addEventListener('click', function() {
+        saveCustomDate(formData);
+    });
+}
+
+// Function to save the suggested release date to the database
+function saveReleaseDate(date, formData) {
+    formData.release_date = date;
+
+    fetch('/save_release_date', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('✅ Release date saved successfully!');
+        $('#confirmationModal').modal('hide');
+        location.reload();
+    })
+    .catch(error => alert('❌ Error saving release date.'));
+}
+
+// Function to save the custom entered date to the database
+function saveCustomDate(formData) {
+    const customDate = document.getElementById('customDate').value;
+    if (!customDate) {
+        alert('❌ Please enter a valid date.');
+        return;
+    }
+
+    formData.release_date = customDate;
+
+    fetch('/save_release_date', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('✅ Custom release date saved successfully!');
+        $('#confirmationModal').modal('hide');
+        location.reload();
+    })
+    .catch(error => alert('❌ Error saving custom date.'));
+}
+</script>
 
     <!-- Bootstrap JS -->
     <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>

@@ -250,26 +250,68 @@ def logout():
 
 @app.route('/apply_release', methods=['POST'])
 def apply_release():
-    if 'studio_name' in session:
+    """Suggests the best release date but does NOT insert into the DB yet."""
+    if 'studio_name' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
         data = request.json
         studio_name = session['studio_name']
         title = data.get('title')
         genre = data.get('genre')
-        budget = float(data.get('budget', 0)) if data.get('budget') is not None else 0
-        expected_revenue = float(data.get('expected_revenue', 0)) if data.get('expected_revenue') is not None else 0
-        alternative_dates = data.get('alternative_dates')
-        
-        if not (title and genre and budget is not None and expected_revenue is not None and alternative_dates and len(alternative_dates) >= 3):
+        budget = float(data.get('budget', 0)) if data.get('budget') else 0
+        expected_revenue = float(data.get('expected_revenue', 0)) if data.get('expected_revenue') else 0
+        alternative_dates = data.get('alternative_dates', [])
+
+        # Validate inputs
+        if not title or not genre or len(alternative_dates) < 3:
             return jsonify({'error': 'Invalid input data'}), 400
-        
+
+        # Suggest best date
         best_date, competitors = game_theory_optimization(studio_name, alternative_dates)
+
+        return jsonify({
+            'best_date': best_date,
+            'competitors': competitors,
+            'message': 'Confirm or modify the release date before saving.'
+        })
+    
+    except Exception as e:
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
+
+@app.route('/save_release_date', methods=['POST'])
+def save_release_date():
+    """Inserts the confirmed release date into the new_releases table."""
+    if 'studio_name' not in session:
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        data = request.json
+        studio_name = session['studio_name']
+        title = data.get('title')
+        genre = data.get('genre')
+        budget = float(data.get('budget', 0)) if data.get('budget') else 0
+        expected_revenue = float(data.get('expected_revenue', 0)) if data.get('expected_revenue') else 0
+        release_date = data.get('release_date')
+
+        if not title or not genre or not release_date:
+            return jsonify({'error': 'Missing required fields'}), 400
+
+        # Insert the confirmed date into the database
         cursor = mysql.connection.cursor()
-        cursor.execute("INSERT INTO new_releases (studio_name, title, genre, release_date, budget, expected_revenue) VALUES (%s, %s, %s, %s, %s, %s)", 
-                       (studio_name, title, genre, best_date, budget, expected_revenue))
+        cursor.execute("""
+            INSERT INTO new_releases (studio_name, title, genre, release_date, budget, expected_revenue) 
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (studio_name, title, genre, release_date, budget, expected_revenue))
         mysql.connection.commit()
-        
-        return jsonify({'best_date': best_date, 'competitors': competitors})
-    return jsonify({'error': 'Unauthorized'}), 401
+        cursor.close()
+
+        return jsonify({"message": "Release date confirmed and saved successfully!"})
+    
+    except Exception as e:
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True)
